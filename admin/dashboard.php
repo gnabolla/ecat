@@ -279,6 +279,10 @@ $title = "Admin Dashboard - ECAT System";
                     <span class="icon icon-reports"></span>
                     Student Reports
                 </a>
+                <a href="/admin/reports/student_results.php" class="admin-btn">
+                    <span class="icon icon-reports"></span>
+                    Exam Results
+                </a>
                 <a href="/admin/reports/performance.php" class="admin-btn">
                     <span class="icon icon-reports"></span>
                     Performance Analysis

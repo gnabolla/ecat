@@ -13,6 +13,7 @@ $routes = [
   "/admin/authenticate.php" => "admin/authenticate.php",
   "/admin/dashboard.php" => "admin/dashboard.php",
   "/admin/logout.php" => "admin/logout.php",
+  "/admin/reports/student_results.php" => "admin/reports/student_results.php",
 ];
 
 function routesToController(string $uri, array $routes): void

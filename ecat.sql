@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2025 at 04:48 PM
+-- Generation Time: Apr 03, 2025 at 11:30 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,25 @@ SET time_zone = "+00:00";
 --
 -- Database: `ecat`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admin_users`
+--
+
+CREATE TABLE `admin_users` (
+  `user_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password_hash` varchar(255) NOT NULL COMMENT 'Store hashed passwords only (e.g., using password_hash())',
+  `full_name` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `role_id` int(11) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Allow disabling accounts without deleting',
+  `last_login` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Stores login details for administrative users';
 
 -- --------------------------------------------------------
 
@@ -164,7 +183,10 @@ CREATE TABLE `students` (
   `birthday` date DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `contact_number` varchar(20) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `municipality_id` int(11) DEFAULT NULL,
+  `province_id` int(11) DEFAULT NULL,
+  `purok` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -177,7 +199,7 @@ CREATE TABLE `student_answers` (
   `answer_id` int(11) NOT NULL,
   `attempt_id` int(11) NOT NULL,
   `question_id` int(11) NOT NULL,
-  `selected_choice` enum('choice1','choice2','choice3','choice4') NOT NULL,
+  `selected_choice` varchar(255) DEFAULT NULL,
   `is_correct` tinyint(1) DEFAULT NULL,
   `answered_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
