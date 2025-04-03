@@ -62,7 +62,6 @@ if ($attempt['status'] === 'In Progress' && $attempt['start_time'] && $attempt['
 }
 
 // If "Start Exam" button is clicked
-// When "Start Exam" button is clicked
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_exam'])) {
     // Update attempt to mark as started
     $db->query(
@@ -89,8 +88,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_exam'])) {
         );
         $questions = array_column($questionsStatement->fetchAll(), 'id');
         
-        // Randomize questions
-        shuffle($questions);
+        // Special handling for passage-based questions (ID 13, 14, 15)
+        // Keep them together and in order regardless of randomization
+        $passageBasedQuestionIds = [13, 14, 15];
+        
+        // Check if any of the passage-based questions are in this subject
+        $passageBasedQuestions = array_intersect($questions, $passageBasedQuestionIds);
+        
+        if (!empty($passageBasedQuestions)) {
+            // Remove the passage-based questions from the array
+            $questions = array_diff($questions, $passageBasedQuestionIds);
+            
+            // Randomize the remaining questions
+            shuffle($questions);
+            
+            // Get only the passage-based questions that are in this subject and sort them
+            $passageQuestionsInOrder = array_intersect($passageBasedQuestionIds, $passageBasedQuestions);
+            sort($passageQuestionsInOrder);
+            
+            // Add the passage-based questions to the beginning of the array to keep them together
+            $questions = array_merge($passageQuestionsInOrder, $questions);
+        } else {
+            // No passage-based questions in this subject, just randomize all questions
+            shuffle($questions);
+        }
         
         // Store randomized question order
         $_SESSION['exam_questions_order'][$subject['id']] = $questions;
@@ -277,6 +298,7 @@ $title = "ECAT Examination - ECAT System";
                         <li>Your answers are automatically saved when you move to another question.</li>
                         <li>You can submit the exam when you've answered all questions or when the time expires.</li>
                         <li>After submission, you will be able to see your results.</li>
+                        <li><strong>Some questions are based on reading passages. Read all passages carefully before answering the related questions.</strong></li>
                     </ul>
                 </div>
                 

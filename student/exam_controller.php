@@ -118,6 +118,22 @@ if (empty($questions)) {
     $questions = $questionsStatement->fetchAll();
 }
 
+// Keep passage-based questions together - THIS IS NEW CODE
+// We're looking for questions with specific IDs (13, 14, 15) that should be kept together
+// Check if the current question is one of the passage-based questions (IDs 13, 14, 15)
+$passageBasedQuestionIds = [13, 14, 15];
+$isPassageBasedQuestion = false;
+$passageContent = '';
+
+// Check if current question is a passage-based question
+$currentQuestion = $questions[$currentQuestionIndex] ?? null;
+if ($currentQuestion && in_array($currentQuestion['id'], $passageBasedQuestionIds)) {
+    $isPassageBasedQuestion = true;
+    
+    // Retrieve the passage content - stored as a common text for questions 13-15
+    $passageContent = "Directions: Read the passages below and answer the questions that follow. Passage 1 Misconduct such as cheating and dishonesty is becoming a perennial problem in schools. In a study conducted on April 29, 2004, ABC's (American Broadcasting Corporation), Prime Time had a segment on cheating of students in the education system. They tackled the issue of cheating in colleges and high schools. They found that 75% of students admitted to cheating on an exam or paper. Of the 12,000 college students, 75% admitted that they have cheated on an exam or term project (Mujtaba and Preziosi, 2006). Students are using calculators, cell phones, computers, and other devices to store and/or download relevant information to complete the exam. One student was timed by Charlie Gibson to see how long it took her to get the answer for one of the questions from another student using her cell phone's text messaging function. It took her less than 30 seconds, using one hand under table, to ask the question and receive the answer while the other hand seemed to be attempting to take the test. Some students feel that they need to cheat since their counterparts are doing it. Others feel that they need to cheat as the school system is simply a \"dress rehearsal\" for the \"cut throat\" world of business. Many students feel that if senior business officers or religious leaders cheat and politicians, including governors and presidents, lie, then they, too, have the right to cheat and get ahead using tactics available to them. To minimize the incidents of cheating, the writers suggest that teachers should involve their students in the learning process. Teachers can provide learning activities that meet the learning needs and reinforce learning in the daily activities of the students. In this case, students are evaluated according to their performance and come up with honest outputs. Source: Cavico, F. and Mujtaba, B. (2009). Making The Case For The Creation Of An Academic Honesty And Integrity Culture In Higher Education: Reflections And Suggestions For Reducing The Rise In Student Cheating. American Journal of Business Education, 2(5), pp. 75-88.";
+}
+
 // If no questions found, try the first subject
 if (empty($questions) && !empty($subjects)) {
     $currentSubjectId = $subjects[0]['id'];

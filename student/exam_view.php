@@ -19,6 +19,50 @@
             font-weight: bold;
             margin-right: 5px;
         }
+
+        /* Passage container styling */
+        .passage-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-height: 350px;
+            overflow-y: auto;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .passage-title {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .passage-source {
+            font-style: italic;
+            color: #666;
+            margin-top: 15px;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        
+        /* Highlighting for important passage elements */
+        .passage-container strong, 
+        .passage-container em,
+        .passage-container b {
+            color: #4CAF50;
+        }
+        
+        /* For smaller screens, adjust the passage */
+        @media (max-width: 768px) {
+            .passage-container {
+                max-height: 200px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -85,6 +129,13 @@
                         
                         <?php if ($imageExists): ?>
                             <img src="<?= htmlspecialchars($imagePath) ?>" alt="Question Image" class="question-image">
+                        <?php endif; ?>
+                        
+                        <?php if (isset($isPassageBasedQuestion) && $isPassageBasedQuestion): ?>
+                            <!-- Display reading passage for passage-based questions -->
+                            <div class="passage-container">
+                                <?= nl2br(htmlspecialchars($passageContent)) ?>
+                            </div>
                         <?php endif; ?>
                         
                         <div class="question-text">

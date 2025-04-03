@@ -160,6 +160,33 @@ foreach ($allSubjects as $subject) {
     ];
 }
 
+// Check if there are any passage-based questions that need special handling
+$passageBasedQuestionIds = [13, 14, 15];
+
+// Get information about passage-based questions
+$passageBasedQuestionsStatement = $db->query(
+    "SELECT q.id, q.question_text, q.subject_id, s.name as subject_name,
+     (SELECT COUNT(*) FROM student_answers WHERE attempt_id = ? AND question_id = q.id) > 0 as is_answered
+     FROM questions q
+     JOIN subjects s ON q.subject_id = s.id
+     WHERE q.id IN (13, 14, 15)
+     ORDER BY q.id",
+    [$attempt['attempt_id']]
+);
+$passageBasedQuestions = $passageBasedQuestionsStatement->fetchAll();
+
+// Group passage-based questions by subject
+$passageBasedQuestionsGrouped = [];
+foreach ($passageBasedQuestions as $question) {
+    if (!isset($passageBasedQuestionsGrouped[$question['subject_id']])) {
+        $passageBasedQuestionsGrouped[$question['subject_id']] = [
+            'subject_name' => $question['subject_name'],
+            'questions' => []
+        ];
+    }
+    $passageBasedQuestionsGrouped[$question['subject_id']]['questions'][] = $question;
+}
+
 $title = "Exam Review - ECAT System";
 ?>
 
@@ -347,6 +374,19 @@ $title = "Exam Review - ECAT System";
         .confirmation-checkbox {
             margin-top: 20px;
         }
+
+        .passage-questions-container {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .passage-questions-container h3 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
@@ -388,6 +428,46 @@ $title = "Exam Review - ECAT System";
                     <div class="stat-label">Time Remaining</div>
                 </div>
             </div>
+            
+            <?php if (!empty($passageBasedQuestionsGrouped)): ?>
+                <div class="passage-questions-container">
+                    <h3>Reading Comprehension Questions</h3>
+                    <p>The following questions are based on reading passages. Make sure to review these questions together.</p>
+                    
+                    <?php foreach ($passageBasedQuestionsGrouped as $subjectId => $subjectData): ?>
+                        <div class="subject-card">
+                            <div class="subject-header">
+                                <div class="subject-name"><?= htmlspecialchars($subjectData['subject_name']) ?></div>
+                                <div class="subject-stats">
+                                    <?php 
+                                    $answeredCount = 0;
+                                    foreach ($subjectData['questions'] as $question) {
+                                        if ($question['is_answered']) {
+                                            $answeredCount++;
+                                        }
+                                    }
+                                    $totalCount = count($subjectData['questions']);
+                                    ?>
+                                    <?= $answeredCount ?> / <?= $totalCount ?> questions answered
+                                    <?php if ($answeredCount < $totalCount): ?>
+                                        <span style="color: #f44336;">(<?= $totalCount - $answeredCount ?> unanswered)</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: <?= ($answeredCount / max(1, $totalCount)) * 100 ?>%;"></div>
+                            </div>
+                            <?php if ($answeredCount < $totalCount): ?>
+                                <div style="margin-top: 10px; text-align: right;">
+                                    <a href="/student/exam.php?subject=<?= $subjectId ?>&question=0" class="button button-return" style="padding: 5px 10px; font-size: 14px;">
+                                        Review Passage Questions
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
             
             <?php if ($unansweredQuestions > 0): ?>
                 <div class="warning-container">
