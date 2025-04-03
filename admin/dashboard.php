@@ -121,7 +121,7 @@ $title = "Admin Dashboard - ECAT System";
         
         .management-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 15px;
         }
         
@@ -137,6 +137,7 @@ $title = "Admin Dashboard - ECAT System";
             text-decoration: none;
             color: #333;
             transition: all 0.3s ease;
+            height: 110px;
         }
         
         .admin-btn:hover {
@@ -148,6 +149,22 @@ $title = "Admin Dashboard - ECAT System";
         .admin-btn i {
             font-size: 24px;
             margin-bottom: 10px;
+        }
+        
+        .admin-btn .btn-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        
+        .admin-btn .btn-desc {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .admin-btn:hover .btn-desc {
+            color: rgba(255, 255, 255, 0.8);
         }
         
         .flash-message {
@@ -241,15 +258,13 @@ $title = "Admin Dashboard - ECAT System";
             <div class="management-grid">
                 <a href="/admin/students/index.php" class="admin-btn">
                     <span class="icon icon-users"></span>
-                    View All Students
+                    <div class="btn-title">View All Students</div>
+                    <div class="btn-desc">Manage student records</div>
                 </a>
                 <a href="/admin/students/add.php" class="admin-btn">
                     <span class="icon icon-users"></span>
-                    Add New Student
-                </a>
-                <a href="/admin/students/import.php" class="admin-btn">
-                    <span class="icon icon-users"></span>
-                    Import Students
+                    <div class="btn-title">Add New Student</div>
+                    <div class="btn-desc">Create new student account</div>
                 </a>
             </div>
         </div>
@@ -259,15 +274,13 @@ $title = "Admin Dashboard - ECAT System";
             <div class="management-grid">
                 <a href="/admin/questions/index.php" class="admin-btn">
                     <span class="icon icon-test"></span>
-                    Manage Questions
+                    <div class="btn-title">Manage Questions</div>
+                    <div class="btn-desc">Edit test questions</div>
                 </a>
                 <a href="/admin/questions/add.php" class="admin-btn">
                     <span class="icon icon-test"></span>
-                    Add New Question
-                </a>
-                <a href="/admin/subjects/index.php" class="admin-btn">
-                    <span class="icon icon-test"></span>
-                    Manage Subjects
+                    <div class="btn-title">Add New Question</div>
+                    <div class="btn-desc">Create new test question</div>
                 </a>
             </div>
         </div>
@@ -275,21 +288,20 @@ $title = "Admin Dashboard - ECAT System";
         <div class="management-section">
             <h2>Reports</h2>
             <div class="management-grid">
-                <a href="/admin/reports/students.php" class="admin-btn">
+                <a href="/admin/reports/all_test_results.php" class="admin-btn">
                     <span class="icon icon-reports"></span>
-                    Student Reports
+                    <div class="btn-title">All Test Results</div>
+                    <div class="btn-desc">View all student exam results</div>
                 </a>
                 <a href="/admin/reports/student_results.php" class="admin-btn">
                     <span class="icon icon-reports"></span>
-                    Exam Results
-                </a>
-                <a href="/admin/reports/performance.php" class="admin-btn">
-                    <span class="icon icon-reports"></span>
-                    Performance Analysis
+                    <div class="btn-title">Individual Results</div>
+                    <div class="btn-desc">View results by student</div>
                 </a>
                 <a href="/admin/reports/export.php" class="admin-btn">
                     <span class="icon icon-reports"></span>
-                    Export Data
+                    <div class="btn-title">Export Data</div>
+                    <div class="btn-desc">Download system data</div>
                 </a>
             </div>
         </div>
@@ -300,15 +312,13 @@ $title = "Admin Dashboard - ECAT System";
             <div class="management-grid">
                 <a href="/admin/users/index.php" class="admin-btn">
                     <span class="icon icon-settings"></span>
-                    Manage Users
-                </a>
-                <a href="/admin/roles/index.php" class="admin-btn">
-                    <span class="icon icon-settings"></span>
-                    Manage Roles
+                    <div class="btn-title">Manage Users</div>
+                    <div class="btn-desc">Admin user accounts</div>
                 </a>
                 <a href="/admin/settings.php" class="admin-btn">
                     <span class="icon icon-settings"></span>
-                    System Settings
+                    <div class="btn-title">System Settings</div>
+                    <div class="btn-desc">Configure system options</div>
                 </a>
             </div>
         </div>
