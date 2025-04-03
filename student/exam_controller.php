@@ -44,28 +44,29 @@ if ($timeRemaining <= 0) {
 }
 
 // Get all subjects
-$subjectsStatement = $db->query("SELECT id, name FROM subjects ORDER BY name");
+$subjectsStatement = $db->query("SELECT id, name FROM subjects");
 $allSubjects = $subjectsStatement->fetchAll();
 
-// Separate Abstract Reasoning from other subjects
-$abstractReasoningSubject = null;
-$otherSubjects = [];
-
+// Create a map of subject IDs to their details for easy lookup
+$subjectMap = [];
 foreach ($allSubjects as $subject) {
-    if (stripos($subject['name'], 'abstract reasoning') !== false) {
-        $abstractReasoningSubject = $subject;
-    } else {
-        $otherSubjects[] = $subject;
+    $subjectMap[$subject['id']] = $subject;
+}
+
+// Use the subject order stored in session if available
+// This ensures subjects remain in the same order throughout the exam
+$subjects = [];
+if (isset($_SESSION['exam_subjects_order']) && is_array($_SESSION['exam_subjects_order'])) {
+    foreach ($_SESSION['exam_subjects_order'] as $subjectId) {
+        if (isset($subjectMap[$subjectId])) {
+            $subjects[] = $subjectMap[$subjectId];
+        }
     }
 }
 
-// Randomize the order of other subjects
-shuffle($otherSubjects);
-
-// Create the final ordered subjects array with Abstract Reasoning at the end
-$subjects = $otherSubjects;
-if ($abstractReasoningSubject) {
-    $subjects[] = $abstractReasoningSubject;
+// If no stored order or empty subjects array, fall back to database order
+if (empty($subjects)) {
+    $subjects = $allSubjects;
 }
 
 // If no subjects found, handle error
@@ -87,12 +88,35 @@ foreach ($subjects as $subject) {
 }
 
 // Get questions for the current subject
-$questionsStatement = $db->query(
-    "SELECT id, question_text, choice1, choice2, choice3, choice4, image_path 
-     FROM questions WHERE subject_id = ? ORDER BY id",
-    [$currentSubjectId]
-);
-$questions = $questionsStatement->fetchAll();
+// Use the question order stored in session if available
+$questions = [];
+if (isset($_SESSION['exam_questions_order'][$currentSubjectId]) && 
+    is_array($_SESSION['exam_questions_order'][$currentSubjectId])) {
+    
+    $questionIds = $_SESSION['exam_questions_order'][$currentSubjectId];
+    $placeholders = implode(',', array_fill(0, count($questionIds), '?'));
+    
+    if (!empty($questionIds)) {
+        $questionsStatement = $db->query(
+            "SELECT id, question_text, choice1, choice2, choice3, choice4, image_path 
+             FROM questions 
+             WHERE id IN ($placeholders)
+             ORDER BY FIELD(id, $placeholders)",
+            array_merge($questionIds, $questionIds)
+        );
+        $questions = $questionsStatement->fetchAll();
+    }
+}
+
+// If no stored questions or empty questions array, fall back to database order
+if (empty($questions)) {
+    $questionsStatement = $db->query(
+        "SELECT id, question_text, choice1, choice2, choice3, choice4, image_path 
+         FROM questions WHERE subject_id = ? ORDER BY id",
+        [$currentSubjectId]
+    );
+    $questions = $questionsStatement->fetchAll();
+}
 
 // If no questions found, try the first subject
 if (empty($questions) && !empty($subjects)) {
