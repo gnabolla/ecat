@@ -8,6 +8,7 @@ $routes = [
   "/student/authenticate.php" => "student/authenticate.php",
   "/student/dashboard.php" => "student/dashboard.php",
   "/student/logout.php" => "student/logout.php",
+  "/student/complete_profile.php" => "student/complete_profile.php",
   "/admin/login.php" => "admin/login.php",
   "/admin/authenticate.php" => "admin/authenticate.php",
   "/admin/dashboard.php" => "admin/dashboard.php",
