@@ -253,7 +253,7 @@ $title = "Admin Dashboard - ECAT System";
             </div>
         </div>
         
-        <div class="management-section">
+        <!-- <div class="management-section">
             <h2>Student Management</h2>
             <div class="management-grid">
                 <a href="/admin/students/index.php" class="admin-btn">
@@ -283,7 +283,7 @@ $title = "Admin Dashboard - ECAT System";
                     <div class="btn-desc">Create new test question</div>
                 </a>
             </div>
-        </div>
+        </div> -->
         
         <div class="management-section">
             <h2>Reports</h2>
@@ -306,7 +306,7 @@ $title = "Admin Dashboard - ECAT System";
             </div>
         </div>
         
-        <?php if ($_SESSION['admin_role'] === 'Administrator'): ?>
+        <!-- <?php if ($_SESSION['admin_role'] === 'Administrator'): ?>
         <div class="management-section">
             <h2>System Administration</h2>
             <div class="management-grid">
@@ -322,7 +322,7 @@ $title = "Admin Dashboard - ECAT System";
                 </a>
             </div>
         </div>
-        <?php endif; ?>
+        <?php endif; ?> -->
     </div>
 </body>
 </html>

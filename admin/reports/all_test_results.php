@@ -7,10 +7,10 @@ requireAdminLogin();
 
 // Get all students with completed exams
 $studentsWithExamsStatement = $db->query(
-    "SELECT 
-        s.student_id, 
-        s.passcode, 
-        s.first_name, 
+    "SELECT
+        s.student_id,
+        s.passcode,
+        s.first_name,
         s.last_name,
         ta.attempt_id,
         ta.total_score,
@@ -23,9 +23,25 @@ $studentsWithExamsStatement = $db->query(
 );
 $studentsWithExams = $studentsWithExamsStatement->fetchAll();
 
-// Get all subjects
+// Get all subjects - still needed to map IDs later
 $subjectsStatement = $db->query("SELECT id, name FROM subjects ORDER BY name");
-$subjects = $subjectsStatement->fetchAll();
+$allSubjects = $subjectsStatement->fetchAll();
+
+// Define the desired order of subjects for display
+$subjectDisplayOrder = [
+    'English',
+    'Science',
+    'Mathematics',
+    'Social Science',
+    'Filipino',
+    'Abstract Reasoning'
+];
+
+// Create a map of subject name to ID for easier lookup later
+$subjectNameToIdMap = [];
+foreach ($allSubjects as $subject) {
+    $subjectNameToIdMap[$subject['name']] = $subject['id'];
+}
 
 // Create an array with subject scores for each student
 $studentScores = [];
@@ -34,27 +50,27 @@ if (!empty($studentsWithExams)) {
     // For each student's attempt, get their subject scores
     foreach ($studentsWithExams as $student) {
         $attemptId = $student['attempt_id'];
-        
-        // Get scores for each subject
+
+        // Get scores for each subject for this attempt
         $subjectScoresStatement = $db->query(
-            "SELECT 
-                sb.subject_id, 
-                s.name AS subject_name, 
+            "SELECT
+                sb.subject_id,
+                s.name AS subject_name,
                 sb.score
              FROM attempt_scores_by_subject sb
              JOIN subjects s ON sb.subject_id = s.id
              WHERE sb.attempt_id = ?",
             [$attemptId]
         );
-        $subjectScores = $subjectScoresStatement->fetchAll();
-        
-        // Create a map of subject_id => score for this student
-        $scoresBySubject = [];
-        foreach ($subjectScores as $score) {
-            $scoresBySubject[$score['subject_id']] = $score['score'];
+        $attemptSubjectScores = $subjectScoresStatement->fetchAll();
+
+        // Create a map of subject_id => score for this student's attempt
+        $scoresBySubjectId = [];
+        foreach ($attemptSubjectScores as $score) {
+            $scoresBySubjectId[$score['subject_id']] = $score['score'];
         }
-        
-        // Store the student data with their scores
+
+        // Store the student data with their scores mapped by subject ID
         $studentScores[] = [
             'student_id' => $student['student_id'],
             'passcode' => $student['passcode'],
@@ -63,7 +79,7 @@ if (!empty($studentsWithExams)) {
             'test_date' => $student['test_date'],
             'status' => $student['status'],
             'total_score' => $student['total_score'],
-            'subject_scores' => $scoresBySubject
+            'subject_scores' => $scoresBySubjectId // Store scores mapped by ID
         ];
     }
 }
@@ -76,7 +92,7 @@ $title = "All Student Test Results - Admin Dashboard";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
+    <title><?= htmlspecialchars($title) ?></title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -84,13 +100,13 @@ $title = "All Student Test Results - Admin Dashboard";
             margin: 0;
             padding: 0;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         header {
             background-color: #2196F3;
             color: white;
@@ -100,16 +116,16 @@ $title = "All Student Test Results - Admin Dashboard";
             align-items: center;
             margin-bottom: 30px;
         }
-        
+
         .welcome {
             margin: 0;
         }
-        
+
         .user-info {
             display: flex;
             align-items: center;
         }
-        
+
         .user-role {
             margin-right: 20px;
             background-color: rgba(255, 255, 255, 0.2);
@@ -117,7 +133,7 @@ $title = "All Student Test Results - Admin Dashboard";
             border-radius: 4px;
             font-size: 14px;
         }
-        
+
         .logout a {
             color: white;
             text-decoration: none;
@@ -125,24 +141,24 @@ $title = "All Student Test Results - Admin Dashboard";
             padding: 8px 15px;
             border-radius: 4px;
         }
-        
+
         .logout a:hover {
             background-color: rgba(0, 0, 0, 0.3);
         }
-        
+
         .back-link {
             margin-bottom: 20px;
         }
-        
+
         .back-link a {
             color: #2196F3;
             text-decoration: none;
         }
-        
+
         .back-link a:hover {
             text-decoration: underline;
         }
-        
+
         .panel {
             background-color: white;
             border-radius: 8px;
@@ -150,26 +166,26 @@ $title = "All Student Test Results - Admin Dashboard";
             padding: 20px;
             margin-bottom: 20px;
         }
-        
+
         .panel h2 {
             color: #333;
             margin-top: 0;
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
         }
-        
+
         table th, table td {
             padding: 10px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
-        
+
         table th {
             background-color: #f4f4f4;
             font-weight: bold;
@@ -177,11 +193,11 @@ $title = "All Student Test Results - Admin Dashboard";
             top: 0;
             z-index: 10;
         }
-        
+
         table tr:hover {
             background-color: #f9f9f9;
         }
-        
+
         .button {
             background-color: #2196F3;
             color: white;
@@ -193,16 +209,16 @@ $title = "All Student Test Results - Admin Dashboard";
             display: inline-block;
             font-size: 14px;
         }
-        
+
         .button:hover {
             background-color: #0b7dda;
         }
-        
+
         .data-table-container {
             overflow-x: auto;
             max-width: 100%;
         }
-        
+
         .search-box {
             width: 100%;
             max-width: 300px;
@@ -212,36 +228,36 @@ $title = "All Student Test Results - Admin Dashboard";
             margin-bottom: 20px;
             font-size: 15px;
         }
-        
+
         .controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-        
+
         .controls-left {
             display: flex;
             gap: 10px;
         }
-        
+
         .export-buttons {
             display: flex;
             gap: 10px;
         }
-        
+
         .flash-message {
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 20px;
         }
-        
+
         .flash-message.error {
             background-color: #ffebee;
             color: #c62828;
             border: 1px solid #ffcdd2;
         }
-        
+
         .flash-message.success {
             background-color: #e8f5e9;
             color: #2e7d32;
@@ -263,17 +279,17 @@ $title = "All Student Test Results - Admin Dashboard";
             </div>
         </div>
     </header>
-    
+
     <div class="container">
         <?php flashMessage(); ?>
-        
+
         <div class="back-link">
-            <a href="/admin/dashboard.php">&larr; Back to Dashboard</a>
+            <a href="/admin/dashboard.php">← Back to Dashboard</a>
         </div>
-        
+
         <div class="panel">
             <h2>All Student Test Results</h2>
-            
+
             <div class="controls">
                 <div class="controls-left">
                     <input type="text" class="search-box" id="studentSearch" placeholder="Search by name or passcode..." onkeyup="filterStudents()">
@@ -282,7 +298,7 @@ $title = "All Student Test Results - Admin Dashboard";
                     <button onclick="exportTableToCSV('test_results.csv')" class="button">Export to CSV</button>
                 </div>
             </div>
-            
+
             <?php if (empty($studentScores)): ?>
                 <p>No students have completed any exams yet.</p>
             <?php else: ?>
@@ -292,8 +308,9 @@ $title = "All Student Test Results - Admin Dashboard";
                             <tr>
                                 <th>Passcode</th>
                                 <th>Name</th>
-                                <?php foreach ($subjects as $subject): ?>
-                                    <th><?= htmlspecialchars($subject['name']) ?></th>
+                                <?php // Use the defined order for headers ?>
+                                <?php foreach ($subjectDisplayOrder as $subjectName): ?>
+                                    <th><?= htmlspecialchars($subjectName) ?></th>
                                 <?php endforeach; ?>
                                 <th>Total Score</th>
                                 <th>Test Date</th>
@@ -305,15 +322,21 @@ $title = "All Student Test Results - Admin Dashboard";
                                 <tr>
                                     <td><?= htmlspecialchars($student['passcode']) ?></td>
                                     <td><?= htmlspecialchars($student['name']) ?></td>
-                                    
-                                    <?php foreach ($subjects as $subject): 
-                                        $score = isset($student['subject_scores'][$subject['id']]) ? 
-                                            $student['subject_scores'][$subject['id']] : '-';
+
+                                    <?php // Iterate through the defined subject order to display scores ?>
+                                    <?php foreach ($subjectDisplayOrder as $subjectName):
+                                        // Find the subject ID using the map
+                                        $subjectId = $subjectNameToIdMap[$subjectName] ?? null;
+                                        $score = '-'; // Default value if subject not found or no score
+                                        // Check if the subject ID exists and if the student has a score for it
+                                        if ($subjectId !== null && isset($student['subject_scores'][$subjectId])) {
+                                            $score = $student['subject_scores'][$subjectId];
+                                        }
                                     ?>
-                                        <td class="score-cell"><?= $score ?></td>
+                                        <td class="score-cell"><?= htmlspecialchars($score) ?></td>
                                     <?php endforeach; ?>
-                                    
-                                    <td class="score-cell"><?= $student['total_score'] ?></td>
+
+                                    <td class="score-cell"><?= htmlspecialchars($student['total_score']) ?></td>
                                     <td><?= date('Y-m-d H:i', strtotime($student['test_date'])) ?></td>
                                     <td>
                                         <a href="/admin/reports/student_results.php?student_id=<?= $student['student_id'] ?>&attempt_id=<?= $student['attempt_id'] ?>" class="button">View Details</a>
@@ -326,7 +349,7 @@ $title = "All Student Test Results - Admin Dashboard";
             <?php endif; ?>
         </div>
     </div>
-    
+
     <script>
         // Function to filter the table based on search input
         function filterStudents() {
@@ -335,72 +358,77 @@ $title = "All Student Test Results - Admin Dashboard";
             filter = input.value.toUpperCase();
             table = document.getElementById("studentsTable");
             tr = table.getElementsByTagName("tr");
-            
-            for (i = 1; i < tr.length; i++) { // Start from 1 to skip header row
+
+            // Loop through all table rows (start from 1 to skip header)
+            for (i = 1; i < tr.length; i++) {
                 td1 = tr[i].getElementsByTagName("td")[0]; // Passcode column
                 td2 = tr[i].getElementsByTagName("td")[1]; // Name column
-                
+
                 if (td1 && td2) {
                     txtValue1 = td1.textContent || td1.innerText;
                     txtValue2 = td2.textContent || td2.innerText;
-                    
+
+                    // Check if passcode or name matches the filter
                     if (txtValue1.toUpperCase().indexOf(filter) > -1 || txtValue2.toUpperCase().indexOf(filter) > -1) {
-                        tr[i].style.display = "";
+                        tr[i].style.display = ""; // Show row
                     } else {
-                        tr[i].style.display = "none";
+                        tr[i].style.display = "none"; // Hide row
                     }
                 }
             }
         }
-        
+
         // Function to export the table to CSV
         function exportTableToCSV(filename) {
             var csv = [];
             var rows = document.querySelectorAll("#studentsTable tr");
-            
+
             for (var i = 0; i < rows.length; i++) {
                 var row = [], cols = rows[i].querySelectorAll("td, th");
-                
-                for (var j = 0; j < cols.length - 1; j++) { // Skip the Actions column
-                    // Get just the text content from the cell
+
+                // Exclude the last column (Actions)
+                for (var j = 0; j < cols.length - 1; j++) {
+                    // Clean up cell text: remove line breaks and trim whitespace
                     let cellText = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, " ").trim();
-                    
-                    // Quote fields with commas
+                    // Escape double quotes by doubling them and enclose in double quotes
                     row.push('"' + cellText.replace(/"/g, '""') + '"');
                 }
                 csv.push(row.join(","));
             }
-            
-            // Download CSV
+
+            // Download CSV file
             downloadCSV(csv.join("\n"), filename);
         }
-        
+
         function downloadCSV(csv, filename) {
             var csvFile;
             var downloadLink;
-            
-            // Create CSV file
-            csvFile = new Blob([csv], {type: "text/csv"});
-            
-            // Create download link
+
+            // BOM for UTF-8 handling in Excel
+            const BOM = "\uFEFF";
+
+            // Create CSV file blob
+            csvFile = new Blob([BOM + csv], {type: "text/csv;charset=utf-8;"});
+
+            // Create download link element
             downloadLink = document.createElement("a");
-            
+
             // Set file name
             downloadLink.download = filename;
-            
+
             // Create a link to the file
             downloadLink.href = window.URL.createObjectURL(csvFile);
-            
+
             // Hide download link
             downloadLink.style.display = "none";
-            
-            // Add the link to DOM
+
+            // Add the link to the DOM
             document.body.appendChild(downloadLink);
-            
-            // Click download link
+
+            // Trigger the download
             downloadLink.click();
-            
-            // Clean up
+
+            // Remove the link from the DOM
             document.body.removeChild(downloadLink);
         }
     </script>
