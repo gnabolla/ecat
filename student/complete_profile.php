@@ -13,45 +13,6 @@ $statement = $db->query(
 );
 $student = $statement->fetch();
 
-// Get all schools for dropdown
-$schoolsStatement = $db->query("SELECT id, school_name FROM schools ORDER BY school_name");
-$schools = $schoolsStatement->fetchAll();
-
-// Get all strands for dropdown
-$strandsStatement = $db->query("SELECT strand_id, name FROM strands ORDER BY name");
-$strands = $strandsStatement->fetchAll();
-
-// Get all courses for dropdown
-$coursesStatement = $db->query(
-    "SELECT c.course_id, c.course_name, cam.campus_name, cam.campus_id
-     FROM courses c
-     JOIN campuses cam ON c.campus_id = cam.campus_id
-     ORDER BY cam.campus_name, c.course_name"
-);
-$courses = $coursesStatement->fetchAll();
-
-// Get all provinces for dropdown
-$provincesStatement = $db->query("SELECT province_id, name FROM provinces ORDER BY name");
-$provinces = $provincesStatement->fetchAll();
-
-// Get all municipalities for dropdown
-$municipalitiesStatement = $db->query(
-    "SELECT m.municipality_id, m.name, p.name AS province_name, m.province_id
-     FROM municipalities m
-     JOIN provinces p ON m.province_id = p.province_id
-     ORDER BY p.name, m.name"
-);
-$municipalities = $municipalitiesStatement->fetchAll();
-
-// Get all barangays for dropdown
-$barangaysStatement = $db->query(
-    "SELECT b.barangay_id, b.name, m.name AS municipality_name, m.municipality_id
-     FROM barangays b
-     JOIN municipalities m ON b.municipality_id = m.municipality_id
-     ORDER BY m.name, b.name"
-);
-$barangays = $barangaysStatement->fetchAll();
-
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errors = [];
@@ -74,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'barangay_id'         => 'Barangay'
     ];
     
-    // Validate required
+    // Validate required fields
     foreach ($requiredFields as $field => $label) {
         if (empty($_POST[$field])) {
             $errors[] = "$label is required.";
@@ -99,24 +60,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $db->query(
                 "UPDATE students
-                    SET first_name = ?, 
-                        last_name = ?, 
-                        middle_name = ?, 
-                        email = ?, 
-                        contact_number = ?, 
-                        sex = ?, 
-                        birthday = ?, 
-                        lrn = ?, 
-                        gwa = ?, 
-                        school_id = ?, 
-                        strand_id = ?, 
-                        first_preference_id = ?, 
-                        second_preference_id = ?,
-                        enrollment_status = ?,
-                        province_id = ?,
-                        municipality_id = ?,
-                        barangay_id = ?,
-                        purok = ?
+                SET first_name = ?, 
+                    last_name = ?, 
+                    middle_name = ?, 
+                    email = ?, 
+                    contact_number = ?, 
+                    sex = ?, 
+                    birthday = ?, 
+                    lrn = ?, 
+                    gwa = ?, 
+                    school_id = ?, 
+                    strand_id = ?, 
+                    first_preference_id = ?, 
+                    second_preference_id = ?,
+                    enrollment_status = ?,
+                    province_id = ?,
+                    municipality_id = ?,
+                    barangay_id = ?,
+                    purok = ?
                 WHERE student_id = ?",
                 [
                     $_POST['first_name'],
@@ -152,6 +113,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Load all data for dropdowns
+// Get all schools for dropdown
+$schoolsStatement = $db->query("SELECT id, school_name FROM schools ORDER BY school_name");
+$schools = $schoolsStatement->fetchAll();
+
+// Get all strands for dropdown
+$strandsStatement = $db->query("SELECT strand_id, name FROM strands ORDER BY name");
+$strands = $strandsStatement->fetchAll();
+
+// Get all courses for dropdown
+$coursesStatement = $db->query(
+    "SELECT c.course_id, c.course_name, cam.campus_name 
+     FROM courses c
+     JOIN campuses cam ON c.campus_id = cam.campus_id
+     ORDER BY cam.campus_name, c.course_name"
+);
+$courses = $coursesStatement->fetchAll();
+
+// Get all provinces
+$provincesStatement = $db->query("SELECT province_id, name FROM provinces ORDER BY name");
+$provinces = $provincesStatement->fetchAll();
+
+// Get all municipalities
+$municipalitiesStatement = $db->query(
+    "SELECT municipality_id, name, province_id 
+     FROM municipalities 
+     ORDER BY name"
+);
+$municipalities = $municipalitiesStatement->fetchAll();
+
+// Get all barangays
+$barangaysStatement = $db->query(
+    "SELECT barangay_id, name, municipality_id 
+     FROM barangays 
+     ORDER BY name"
+);
+$barangays = $barangaysStatement->fetchAll();
+
+// Group courses by campus
+$campusCourses = [];
+foreach ($courses as $course) {
+    if (!isset($campusCourses[$course['campus_name']])) {
+        $campusCourses[$course['campus_name']] = [];
+    }
+    $campusCourses[$course['campus_name']][] = $course;
+}
+
 $title = "Complete Your Profile - ECAT System";
 ?>
 <!DOCTYPE html>
@@ -160,79 +168,128 @@ $title = "Complete Your Profile - ECAT System";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?></title>
-    
-    <!-- Choices.js CSS/JS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-    
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
-            margin: 0; padding: 0;
+            margin: 0; 
+            padding: 0;
         }
         .container {
-            max-width: 800px; margin: 0 auto; padding: 20px;
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
         }
         header {
-            background-color: #4CAF50; color: white;
-            padding: 15px 20px; display: flex;
-            justify-content: space-between; align-items: center;
+            background-color: #4CAF50; 
+            color: white;
+            padding: 15px 20px; 
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
             margin-bottom: 30px;
         }
-        .page-title { margin: 0; }
+        .page-title { 
+            margin: 0; 
+        }
         .back-link a {
-            color: white; text-decoration: none;
+            color: white; 
+            text-decoration: none;
             background-color: rgba(0, 0, 0, 0.2);
-            padding: 8px 15px; border-radius: 4px;
+            padding: 8px 15px; 
+            border-radius: 4px;
         }
         .back-link a:hover {
             background-color: rgba(0, 0, 0, 0.3);
         }
         .profile-form {
-            background-color: white; border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 20px;
+            background-color: white; 
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            padding: 20px;
         }
-        h2 { color: #333; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .form-section { margin-bottom: 20px; }
-        .form-section h3 { color: #4CAF50; margin-top: 0; }
+        h2 { 
+            color: #333; 
+            margin-top: 0; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 10px; 
+        }
+        .form-section { 
+            margin-bottom: 20px; 
+        }
+        .form-section h3 { 
+            color: #4CAF50; 
+            margin-top: 0; 
+        }
         .form-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px;
         }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .required::after { content: " *"; color: #f44336; }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        .required::after { 
+            content: " *"; 
+            color: #f44336; 
+        }
         input[type="text"],
         input[type="email"],
         input[type="tel"],
         input[type="number"],
         input[type="date"],
         select {
-            width: 100%; padding: 10px; border: 1px solid #ddd;
-            border-radius: 4px; box-sizing: border-box; font-size: 16px;
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd;
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-size: 16px;
         }
         .button {
-            background-color: #4CAF50; color: white; border: none;
-            padding: 12px 20px; border-radius: 4px; cursor: pointer;
-            font-size: 16px; display: inline-block; text-decoration: none;
+            background-color: #4CAF50; 
+            color: white; 
+            border: none;
+            padding: 12px 20px; 
+            border-radius: 4px; 
+            cursor: pointer;
+            font-size: 16px; 
+            display: inline-block; 
+            text-decoration: none;
         }
-        .button:hover { background-color: #45a049; }
+        .button:hover { 
+            background-color: #45a049; 
+        }
         .error-list {
-            background-color: #ffebee; color: #c62828;
-            border: 1px solid #ffcdd2; padding: 10px;
-            border-radius: 4px; margin-bottom: 20px;
+            background-color: #ffebee; 
+            color: #c62828;
+            border: 1px solid #ffcdd2; 
+            padding: 10px;
+            border-radius: 4px; 
+            margin-bottom: 20px;
         }
-        .error-list ul { margin: 0; padding-left: 20px; }
-        .hints { font-size: 14px; color: #666; margin-top: 5px; }
-        
-        /* Choices.js overrides for clarity */
-        .choices { margin-bottom: 0; }
-        .choices__inner {
-            background-color: #fff; border: 1px solid #ddd;
-            border-radius: 4px; min-height: 40px;
-            padding: 7px 7.5px;
+        .error-list ul { 
+            margin: 0; 
+            padding-left: 20px; 
         }
-        .choices__list--dropdown { z-index: 10; }
+        .hints { 
+            font-size: 14px; 
+            color: #666; 
+            margin-top: 5px; 
+        }
+        .alert-box {
+            background-color: #e8f5e9; 
+            color: #2e7d32; 
+            border: 1px solid #c8e6c9; 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -257,9 +314,6 @@ $title = "Complete Your Profile - ECAT System";
     <div class="profile-form">
         <h2>Student Information</h2>
         <p>Please complete all required fields (*) to enable taking the ECAT exam.</p>
-        <div class="alert-box" style="background-color: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; padding: 10px; margin-bottom: 20px; border-radius: 4px;">
-            <p><strong>Tip:</strong> You can search for schools, strands, and programs by typing in the dropdown boxes. Just click on a dropdown and start typing to find what you need!</p>
-        </div>
         
         <form action="/student/complete_profile.php" method="post">
             <!-- Personal Information -->
@@ -287,7 +341,7 @@ $title = "Complete Your Profile - ECAT System";
                         <label for="sex" class="required">Sex</label>
                         <select id="sex" name="sex" required>
                             <option value="">-- Select --</option>
-                            <option value="Male"   <?= ($student['sex'] ?? '') === 'Male'   ? 'selected' : '' ?>>Male</option>
+                            <option value="Male" <?= ($student['sex'] ?? '') === 'Male' ? 'selected' : '' ?>>Male</option>
                             <option value="Female" <?= ($student['sex'] ?? '') === 'Female' ? 'selected' : '' ?>>Female</option>
                         </select>
                     </div>
@@ -341,25 +395,12 @@ $title = "Complete Your Profile - ECAT System";
                         <label for="municipality_id" class="required">City/Municipality</label>
                         <select id="municipality_id" name="municipality_id" required>
                             <option value="">-- Select City/Municipality --</option>
-                            <?php 
-                            // Group municipalities by province for better organization
-                            $municipalitiesByProvince = [];
-                            foreach ($municipalities as $m) {
-                                if (!isset($municipalitiesByProvince[$m['province_name']])) {
-                                    $municipalitiesByProvince[$m['province_name']] = [];
-                                }
-                                $municipalitiesByProvince[$m['province_name']][] = $m;
-                            }
-                            foreach ($municipalitiesByProvince as $provName => $provMuns): ?>
-                                <optgroup label="<?= htmlspecialchars($provName) ?>">
-                                    <?php foreach ($provMuns as $mun): ?>
-                                        <option value="<?= $mun['municipality_id'] ?>"
-                                            data-province="<?= $mun['province_id'] ?>"
-                                            <?= ($student['municipality_id'] ?? '') == $mun['municipality_id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($mun['name']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
+                            <?php foreach ($municipalities as $municipality): ?>
+                                <option value="<?= $municipality['municipality_id'] ?>" 
+                                       data-province="<?= $municipality['province_id'] ?>"
+                                       <?= ($student['municipality_id'] ?? '') == $municipality['municipality_id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($municipality['name']) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -368,25 +409,12 @@ $title = "Complete Your Profile - ECAT System";
                         <label for="barangay_id" class="required">Barangay</label>
                         <select id="barangay_id" name="barangay_id" required>
                             <option value="">-- Select Barangay --</option>
-                            <?php
-                            // Group barangays by municipality
-                            $barangaysByMunicipality = [];
-                            foreach ($barangays as $b) {
-                                if (!isset($barangaysByMunicipality[$b['municipality_name']])) {
-                                    $barangaysByMunicipality[$b['municipality_name']] = [];
-                                }
-                                $barangaysByMunicipality[$b['municipality_name']][] = $b;
-                            }
-                            foreach ($barangaysByMunicipality as $munName => $bList): ?>
-                                <optgroup label="<?= htmlspecialchars($munName) ?>">
-                                    <?php foreach ($bList as $bg): ?>
-                                        <option value="<?= $bg['barangay_id'] ?>"
-                                            data-municipality="<?= $bg['municipality_id'] ?>"
-                                            <?= ($student['barangay_id'] ?? '') == $bg['barangay_id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($bg['name']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
+                            <?php foreach ($barangays as $barangay): ?>
+                                <option value="<?= $barangay['barangay_id'] ?>" 
+                                       data-municipality="<?= $barangay['municipality_id'] ?>"
+                                       <?= ($student['barangay_id'] ?? '') == $barangay['barangay_id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($barangay['name']) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -445,22 +473,10 @@ $title = "Complete Your Profile - ECAT System";
                         <label for="enrollment_status">Enrollment Status</label>
                         <select id="enrollment_status" name="enrollment_status">
                             <option value="">-- Select Status --</option>
-                            <option value="Freshman"
-                                <?= ($student['enrollment_status'] ?? '') === 'Freshman' ? 'selected' : '' ?>>
-                                Freshman
-                            </option>
-                            <option value="Transferee"
-                                <?= ($student['enrollment_status'] ?? '') === 'Transferee' ? 'selected' : '' ?>>
-                                Transferee
-                            </option>
-                            <option value="Second Course"
-                                <?= ($student['enrollment_status'] ?? '') === 'Second Course' ? 'selected' : '' ?>>
-                                Second Course
-                            </option>
-                            <option value="Others"
-                                <?= ($student['enrollment_status'] ?? '') === 'Others' ? 'selected' : '' ?>>
-                                Others
-                            </option>
+                            <option value="Freshman" <?= ($student['enrollment_status'] ?? '') === 'Freshman' ? 'selected' : '' ?>>Freshman</option>
+                            <option value="Transferee" <?= ($student['enrollment_status'] ?? '') === 'Transferee' ? 'selected' : '' ?>>Transferee</option>
+                            <option value="Second Course" <?= ($student['enrollment_status'] ?? '') === 'Second Course' ? 'selected' : '' ?>>Second Course</option>
+                            <option value="Others" <?= ($student['enrollment_status'] ?? '') === 'Others' ? 'selected' : '' ?>>Others</option>
                         </select>
                     </div>
                 </div>
@@ -474,21 +490,12 @@ $title = "Complete Your Profile - ECAT System";
                         <label for="first_preference_id" class="required">First Choice Program</label>
                         <select id="first_preference_id" name="first_preference_id" required>
                             <option value="">-- Select Program --</option>
-                            <?php
-                            // Group courses by campus
-                            $coursesByCampus = [];
-                            foreach ($courses as $c) {
-                                if (!isset($coursesByCampus[$c['campus_name']])) {
-                                    $coursesByCampus[$c['campus_name']] = [];
-                                }
-                                $coursesByCampus[$c['campus_name']][] = $c;
-                            }
-                            foreach ($coursesByCampus as $campusName => $campusCourses): ?>
+                            <?php foreach ($campusCourses as $campusName => $campusPrograms): ?>
                                 <optgroup label="<?= htmlspecialchars($campusName) ?>">
-                                    <?php foreach ($campusCourses as $course): ?>
-                                        <option value="<?= $course['course_id'] ?>"
-                                            <?= ($student['first_preference_id'] ?? '') == $course['course_id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($course['course_name']) ?>
+                                    <?php foreach ($campusPrograms as $program): ?>
+                                        <option value="<?= $program['course_id'] ?>"
+                                            <?= ($student['first_preference_id'] ?? '') == $program['course_id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($program['course_name']) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </optgroup>
@@ -499,12 +506,12 @@ $title = "Complete Your Profile - ECAT System";
                         <label for="second_preference_id">Second Choice Program</label>
                         <select id="second_preference_id" name="second_preference_id">
                             <option value="">-- Select Program --</option>
-                            <?php foreach ($coursesByCampus as $campusName => $campusCourses): ?>
+                            <?php foreach ($campusCourses as $campusName => $campusPrograms): ?>
                                 <optgroup label="<?= htmlspecialchars($campusName) ?>">
-                                    <?php foreach ($campusCourses as $course): ?>
-                                        <option value="<?= $course['course_id'] ?>"
-                                            <?= ($student['second_preference_id'] ?? '') == $course['course_id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($course['course_name']) ?>
+                                    <?php foreach ($campusPrograms as $program): ?>
+                                        <option value="<?= $program['course_id'] ?>"
+                                            <?= ($student['second_preference_id'] ?? '') == $program['course_id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($program['course_name']) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </optgroup>
@@ -524,130 +531,66 @@ $title = "Complete Your Profile - ECAT System";
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Grab all selects we want to initialize with Choices
-    const schoolSelect     = document.getElementById('school_id');
-    const strandSelect     = document.getElementById('strand_id');
-    const firstPrefSelect  = document.getElementById('first_preference_id');
-    const secondPrefSelect = document.getElementById('second_preference_id');
-    const provinceSelect   = document.getElementById('province_id');
+    // Get dropdown elements
+    const provinceSelect = document.getElementById('province_id');
     const municipalitySelect = document.getElementById('municipality_id');
-    const barangaySelect     = document.getElementById('barangay_id');
+    const barangaySelect = document.getElementById('barangay_id');
     
-    // Initialize Choices
-    const schoolChoices = new Choices(schoolSelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a school...'
-    });
-    const strandChoices = new Choices(strandSelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a strand...'
-    });
-    const firstPrefChoices = new Choices(firstPrefSelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a program...'
-    });
-    const secondPrefChoices = new Choices(secondPrefSelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a program...'
-    });
-    const provinceChoices = new Choices(provinceSelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a province...'
-    });
-    const municipalityChoices = new Choices(municipalitySelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a municipality...'
-    });
-    const barangayChoices = new Choices(barangaySelect, {
-        searchEnabled: true,
-        searchPlaceholderValue: 'Search for a barangay...'
-    });
-    
-    // Helper: rebuild a <select> with Choices based on currently visible options
-    function resetChoices(choicesInstance, selectElem, placeholderText) {
-        // 1) Clear out the existing store in that instance
-        choicesInstance.clearStore();
-        // 2) Build up from whichever <optgroup>/<option> is still visible
-        const optionGroups = Array.from(selectElem.querySelectorAll('optgroup'));
-        const basicOptions = Array.from(selectElem.querySelectorAll(':scope > option')); 
-        // We'll also start with a blank placeholder choice
-        choicesInstance.setChoices([{ value: '', label: placeholderText, selected: true, disabled: false }]);
-
-        // If we have <optgroup> elements
-        if (optionGroups.length > 0) {
-            optionGroups.forEach(group => {
-                // filter for visible <option>
-                const groupOptions = Array.from(group.querySelectorAll('option'))
-                    .filter(op => op.style.display !== 'none');
-                if (groupOptions.length > 0) {
-                    const groupName = group.label || 'Options';
-                    // Build a group
-                    const choiceGroup = groupOptions.map(op => ({
-                        value: op.value,
-                        label: op.textContent.trim(),
-                    }));
-                    choicesInstance.setChoices(choiceGroup, 'value', 'label', false, groupName);
-                }
-            });
-        } else {
-            // If no grouping, we just add basic <option> that are visible
-            const visibleOptions = basicOptions.filter(op => op.style.display !== 'none');
-            const structured = visibleOptions.map(op => ({
-                value: op.value,
-                label: op.textContent.trim()
-            }));
-            choicesInstance.setChoices(structured, 'value', 'label', false);
-        }
-    }
-
-    // ----- LINKED DROPDOWN LOGIC -----
-    provinceSelect.addEventListener('change', function() {
-        const selectedProvID = this.value; 
-        // Show/hide municipalities
-        const munOptions = municipalitySelect.querySelectorAll('option');
-        munOptions.forEach(op => {
-            if (!op.value) {
-                // placeholder always visible
-                op.style.display = '';
+    // Function to filter municipalities based on province
+    function filterMunicipalities() {
+        const provinceId = provinceSelect.value;
+        
+        // Hide all municipality options first
+        Array.from(municipalitySelect.options).forEach(option => {
+            if (option.value === '') {
+                // Keep the placeholder option visible
+                option.style.display = '';
             } else {
-                // Compare with data-province, use == to avoid string vs number mismatch
-                op.style.display = (op.getAttribute('data-province') == selectedProvID)
-                    ? '' : 'none';
+                const optionProvinceId = option.getAttribute('data-province');
+                option.style.display = (optionProvinceId === provinceId) ? '' : 'none';
             }
         });
-        // Reset the municipality selection to blank
+        
+        // Reset municipality selection
         municipalitySelect.value = '';
-        resetChoices(municipalityChoices, municipalitySelect, '-- Select City/Municipality --');
-
-        // Reset barangay completely
+        
+        // Also reset and hide all barangays since municipality changed
         barangaySelect.value = '';
-        barangaySelect.querySelectorAll('option').forEach(op => op.style.display = '');
-        resetChoices(barangayChoices, barangaySelect, '-- Select Barangay --');
-    });
+        Array.from(barangaySelect.options).forEach(option => {
+            option.style.display = option.value === '' ? '' : 'none';
+        });
+    }
     
-    municipalitySelect.addEventListener('change', function() {
-        const selectedMunID = this.value;
-        // Show/hide barangays
-        const brgyOptions = barangaySelect.querySelectorAll('option');
-        brgyOptions.forEach(op => {
-            if (!op.value) {
-                op.style.display = '';
+    // Function to filter barangays based on municipality
+    function filterBarangays() {
+        const municipalityId = municipalitySelect.value;
+        
+        // Hide all barangay options first
+        Array.from(barangaySelect.options).forEach(option => {
+            if (option.value === '') {
+                // Keep the placeholder option visible
+                option.style.display = '';
             } else {
-                op.style.display = (op.getAttribute('data-municipality') == selectedMunID)
-                    ? '' : 'none';
+                const optionMunicipalityId = option.getAttribute('data-municipality');
+                option.style.display = (optionMunicipalityId === municipalityId) ? '' : 'none';
             }
         });
-        // Reset barangay to blank
+        
+        // Reset barangay selection
         barangaySelect.value = '';
-        resetChoices(barangayChoices, barangaySelect, '-- Select Barangay --');
-    });
-
-    // Simulate a change on page load if there's a saved province/municipality
-    if (provinceSelect.value) {
-        provinceSelect.dispatchEvent(new Event('change'));
     }
-    if (municipalitySelect.value) {
-        municipalitySelect.dispatchEvent(new Event('change'));
+    
+    // Add event listeners
+    provinceSelect.addEventListener('change', filterMunicipalities);
+    municipalitySelect.addEventListener('change', filterBarangays);
+    
+    // Initial filtering on page load
+    if (provinceSelect.value) {
+        filterMunicipalities();
+        
+        if (municipalitySelect.value) {
+            filterBarangays();
+        }
     }
 });
 </script>
