@@ -39,17 +39,52 @@ if ($timeRemaining <= 0) {
         "UPDATE test_attempts SET status = 'Expired', end_time = FROM_UNIXTIME(?) WHERE attempt_id = ?",
         [$startTime + $examDuration, $attempt['attempt_id']]
     );
-    
+
     redirect('/student/results.php', 'Your exam time has expired', 'error');
 }
 
 // Get all subjects
 $subjectsStatement = $db->query("SELECT id, name FROM subjects ORDER BY name");
-$subjects = $subjectsStatement->fetchAll();
+$allSubjects = $subjectsStatement->fetchAll();
+
+// Separate Abstract Reasoning from other subjects
+$abstractReasoningSubject = null;
+$otherSubjects = [];
+
+foreach ($allSubjects as $subject) {
+    if (stripos($subject['name'], 'abstract reasoning') !== false) {
+        $abstractReasoningSubject = $subject;
+    } else {
+        $otherSubjects[] = $subject;
+    }
+}
+
+// Randomize the order of other subjects
+shuffle($otherSubjects);
+
+// Create the final ordered subjects array with Abstract Reasoning at the end
+$subjects = $otherSubjects;
+if ($abstractReasoningSubject) {
+    $subjects[] = $abstractReasoningSubject;
+}
+
+// If no subjects found, handle error
+if (empty($subjects)) {
+    redirect('/student/test.php', 'No subjects found for the exam. Please contact the administrator.', 'error');
+}
 
 // Get current question from URL parameter or default to first question
 $currentSubjectId = isset($_GET['subject']) ? (int)$_GET['subject'] : ($subjects[0]['id'] ?? 0);
 $currentQuestionIndex = isset($_GET['question']) ? (int)$_GET['question'] : 0;
+
+// Check if current subject is Abstract Reasoning
+$isAbstractReasoning = false;
+foreach ($subjects as $subject) {
+    if ($subject['id'] == $currentSubjectId && stripos($subject['name'], 'abstract reasoning') !== false) {
+        $isAbstractReasoning = true;
+        break;
+    }
+}
 
 // Get questions for the current subject
 $questionsStatement = $db->query(
@@ -89,7 +124,7 @@ if ($currentQuestion) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
     $questionId = (int)$_POST['question_id'];
     $selectedChoice = $_POST['selected_choice'] ?? null;
-    
+
     if ($selectedChoice) {
         // Check if answer already exists
         $checkAnswerStatement = $db->query(
@@ -98,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
             [$attempt['attempt_id'], $questionId]
         );
         $existingAnswer = $checkAnswerStatement->fetch();
-        
+
         if ($existingAnswer) {
             // Update existing answer
             $db->query(
@@ -117,10 +152,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
             );
         }
     }
-    
+
     // Determine where to go next
     $nextAction = $_POST['next_action'] ?? 'next';
-    
+
     if ($nextAction === 'next') {
         // Go to next question
         if ($currentQuestionIndex < count($questions) - 1) {
@@ -137,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
                     break;
                 }
             }
-            
+
             if (!$nextSubjectFound) {
                 // No next subject, go to review page
                 redirect("/student/exam_review.php");
@@ -154,20 +189,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
             foreach ($subjects as $index => $subject) {
                 if ($subject['id'] == $currentSubjectId && $index > 0) {
                     $prevSubjectId = $subjects[$index - 1]['id'];
-                    
+
                     // Get count of questions in previous subject
                     $prevQuestionsStatement = $db->query(
                         "SELECT COUNT(*) as count FROM questions WHERE subject_id = ?",
                         [$prevSubjectId]
                     );
                     $prevQuestionCount = $prevQuestionsStatement->fetch()['count'];
-                    
+
                     redirect("/student/exam.php?subject=$prevSubjectId&question=" . ($prevQuestionCount - 1));
                     $prevSubjectFound = true;
                     break;
                 }
             }
-            
+
             if (!$prevSubjectFound) {
                 // No previous subject, stay on current question
                 redirect("/student/exam.php?subject=$currentSubjectId&question=$currentQuestionIndex");
@@ -175,22 +210,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
         }
     } elseif ($nextAction === 'submit') {
         // Submit the exam
-        
+
         // Update answers with correct/incorrect status
         $db->query(
             "UPDATE student_answers sa
              JOIN questions q ON sa.question_id = q.id
              SET sa.is_correct = CASE
-                WHEN sa.selected_choice = 'choice1' AND q.correct_answer = q.choice1 THEN 1
-                WHEN sa.selected_choice = 'choice2' AND q.correct_answer = q.choice2 THEN 1
-                WHEN sa.selected_choice = 'choice3' AND q.correct_answer = q.choice3 THEN 1
-                WHEN sa.selected_choice = 'choice4' AND q.correct_answer = q.choice4 THEN 1
+                WHEN sa.selected_choice = q.correct_answer THEN 1
                 ELSE 0
              END
              WHERE sa.attempt_id = ?",
             [$attempt['attempt_id']]
         );
-        
         // Calculate total score
         $scoreStatement = $db->query(
             "SELECT COUNT(*) as total_correct FROM student_answers 
@@ -198,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
             [$attempt['attempt_id']]
         );
         $totalCorrect = $scoreStatement->fetch()['total_correct'];
-        
+
         // Update attempt status
         $db->query(
             "UPDATE test_attempts 
@@ -206,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
              WHERE attempt_id = ?",
             [$totalCorrect, $attempt['attempt_id']]
         );
-        
+
         // Calculate subject scores
         foreach ($subjects as $subject) {
             $subjectScoreStatement = $db->query(
@@ -219,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
                 [$attempt['attempt_id'], $subject['id']]
             );
             $subjectScore = $subjectScoreStatement->fetch();
-            
+
             if ($subjectScore && $subjectScore['items_attempted'] > 0) {
                 // Insert or update subject score
                 $db->query(
@@ -231,16 +262,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
                      items_attempted = VALUES(items_attempted),
                      items_correct = VALUES(items_correct)",
                     [
-                        $attempt['attempt_id'], 
-                        $subject['id'], 
-                        $subjectScore['items_correct'], 
+                        $attempt['attempt_id'],
+                        $subject['id'],
+                        $subjectScore['items_correct'],
                         $subjectScore['items_attempted'],
                         $subjectScore['items_correct']
                     ]
                 );
             }
         }
-        
+
         redirect('/student/results.php', 'Your exam has been submitted successfully', 'success');
     } else {
         // Just stay on the current question (review mode)

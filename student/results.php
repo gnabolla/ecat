@@ -304,3 +304,100 @@ $title = "Exam Results - ECAT System";
                 padding: 10px;
             }
         }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="header-title">Exam Results</h1>
+            <div class="back-link">
+                <a href="/student/dashboard.php">Back to Dashboard</a>
+            </div>
+        </header>
+        
+        <?php flashMessage(); ?>
+        
+        <div class="results-card">
+            <div class="results-header">
+                <h2 class="results-title">ECAT Examination Results</h2>
+                <p class="results-subtitle">
+                    Completed on: <?= date('F d, Y h:i A', strtotime($attempt['end_time'])) ?>
+                    <span class="result-status <?= $attempt['status'] === 'Completed' ? 'status-completed' : 'status-expired' ?>">
+                        <?= $attempt['status'] ?>
+                    </span>
+                </p>
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-card score">
+                    <div class="summary-value"><?= number_format($overallScore, 1) ?>%</div>
+                    <div class="summary-label">Overall Score</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-value"><?= $correctAnswers ?> / <?= $answeredQuestions ?></div>
+                    <div class="summary-label">Correct Answers</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-value"><?= $answeredQuestions ?> / <?= $totalQuestions ?></div>
+                    <div class="summary-label">Questions Answered</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-value">
+                        <?= $hours > 0 ? $hours . 'h ' : '' ?><?= $minutes ?>m <?= $seconds ?>s
+                    </div>
+                    <div class="summary-label">Exam Duration</div>
+                </div>
+            </div>
+            
+            <div class="subjects-container">
+                <div class="subjects-header">
+                    <h3 class="subjects-title">Scores by Subject</h3>
+                    <button onclick="window.print()" class="print-button">Print Results</button>
+                </div>
+                
+                <?php foreach ($subjectScores as $subject): ?>
+                    <?php
+                    // Calculate subject score percentage
+                    $scorePercentage = 0;
+                    if (isset($subject['items_attempted']) && $subject['items_attempted'] > 0) {
+                        $scorePercentage = ($subject['items_correct'] / $subject['items_attempted']) * 100;
+                    }
+                    
+                    // Determine color class based on score
+                    $colorClass = 'low';
+                    if ($scorePercentage >= 70) {
+                        $colorClass = 'high';
+                    } elseif ($scorePercentage >= 50) {
+                        $colorClass = 'medium';
+                    }
+                    ?>
+                    
+                    <div class="subject-card">
+                        <div class="subject-header">
+                            <div class="subject-name"><?= htmlspecialchars($subject['name']) ?></div>
+                            <div class="subject-score">
+                                <?= $subject['items_correct'] ?? 0 ?> / <?= $subject['items_attempted'] ?? 0 ?> 
+                                (<?= number_format($scorePercentage, 1) ?>%)
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill <?= $colorClass ?>" style="width: <?= $scorePercentage ?>%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="subject-stats">
+                            <div>Attempted: <?= $subject['items_attempted'] ?? 0 ?> questions</div>
+                            <div>Correct: <?= $subject['items_correct'] ?? 0 ?> questions</div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

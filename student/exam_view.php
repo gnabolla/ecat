@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?></title>
     <link rel="stylesheet" href="/assets/css/exam.css">
+    <style>
+        /* Additional styles for Abstract Reasoning */
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* Override label content for Abstract Reasoning */
+        .abstract-reasoning .choice-label::before {
+            content: attr(data-choice-number) " ";
+            font-weight: bold;
+            margin-right: 5px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -76,22 +91,39 @@
                             <?= htmlspecialchars($currentQuestion['question_text']) ?>
                         </div>
                         
-                        <div class="choices">
-                            <?php
-                            $selectedChoice = $studentAnswer['selected_choice'] ?? '';
-                            for ($i = 1; $i <= 4; $i++): 
-                                $choiceKey = "choice$i";
-                            ?>
-                                <div class="choice-item">
-                                    <input type="radio" id="<?= $choiceKey ?>" name="selected_choice" 
-                                           value="<?= $choiceKey ?>" 
-                                           <?= $selectedChoice === $choiceKey ? 'checked' : '' ?>>
-                                    <label for="<?= $choiceKey ?>" class="choice-label">
-                                        <?= htmlspecialchars($currentQuestion[$choiceKey]) ?>
-                                    </label>
-                                </div>
-                            <?php endfor; ?>
-                        </div>
+                        <?php $selectedChoice = $studentAnswer['selected_choice'] ?? ''; ?>
+                        
+                        <?php if ($isAbstractReasoning): ?>
+                            <!-- Abstract Reasoning with 8 choices (handled at application level) -->
+                            <div class="choices choices-grid abstract-reasoning">
+                                <?php for ($i = 1; $i <= 8; $i++): ?>
+                                    <div class="choice-item">
+                                        <input type="radio" id="pattern<?= $i ?>" name="selected_choice" 
+                                               value="<?= $i ?>" 
+                                               <?= $selectedChoice == $i ? 'checked' : '' ?>>
+                                        <label for="pattern<?= $i ?>" class="choice-label" data-choice-number="<?= $i ?>">
+                                            Pattern <?= $i ?>
+                                        </label>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        <?php else: ?>
+                            <!-- Regular subjects with 4 choices -->
+                            <div class="choices">
+                                <?php for ($i = 1; $i <= 4; $i++): 
+                                    $choiceKey = "choice$i";
+                                ?>
+                                    <div class="choice-item">
+                                        <input type="radio" id="<?= $choiceKey ?>" name="selected_choice" 
+                                               value="<?= $choiceKey ?>" 
+                                               <?= $selectedChoice === $choiceKey ? 'checked' : '' ?>>
+                                        <label for="<?= $choiceKey ?>" class="choice-label">
+                                            <?= htmlspecialchars($currentQuestion[$choiceKey]) ?>
+                                        </label>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
                         
                         <div class="action-buttons">
                             <button type="submit" name="submit_answer" class="button button-prev" 

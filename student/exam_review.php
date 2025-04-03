@@ -40,9 +40,12 @@ if ($timeRemaining <= 0) {
     redirect('/student/results.php', 'Your exam time has expired', 'error');
 }
 
-// Get all subjects with questions and student answers
+// Get all subjects
 $subjectsStatement = $db->query("SELECT id, name FROM subjects ORDER BY name");
-$subjects = $subjectsStatement->fetchAll();
+$allSubjects = $subjectsStatement->fetchAll();
+
+// We use alphabetical order here for consistency with other pages
+// No need to randomize here as this is just for review purposes
 
 // Submit exam action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_exam'])) {
@@ -50,12 +53,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_exam'])) {
     $db->query(
         "UPDATE student_answers sa
          JOIN questions q ON sa.question_id = q.id
+         JOIN subjects s ON q.subject_id = s.id
          SET sa.is_correct = CASE
-            WHEN sa.selected_choice = 'choice1' AND q.correct_answer = q.choice1 THEN 1
-            WHEN sa.selected_choice = 'choice2' AND q.correct_answer = q.choice2 THEN 1
-            WHEN sa.selected_choice = 'choice3' AND q.correct_answer = q.choice3 THEN 1
-            WHEN sa.selected_choice = 'choice4' AND q.correct_answer = q.choice4 THEN 1
-            ELSE 0
+            WHEN s.name LIKE '%abstract reasoning%' THEN 
+                CASE WHEN sa.selected_choice = q.correct_answer THEN 1 ELSE 0 END
+            ELSE
+                CASE
+                    WHEN sa.selected_choice = 'choice1' AND q.correct_answer = q.choice1 THEN 1
+                    WHEN sa.selected_choice = 'choice2' AND q.correct_answer = q.choice2 THEN 1
+                    WHEN sa.selected_choice = 'choice3' AND q.correct_answer = q.choice3 THEN 1
+                    WHEN sa.selected_choice = 'choice4' AND q.correct_answer = q.choice4 THEN 1
+                    ELSE 0
+                END
          END
          WHERE sa.attempt_id = ?",
         [$attempt['attempt_id']]
@@ -78,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_exam'])) {
     );
     
     // Calculate subject scores
-    foreach ($subjects as $subject) {
+    foreach ($allSubjects as $subject) {
         $subjectScoreStatement = $db->query(
             "SELECT 
                 COUNT(*) as items_attempted,
@@ -128,7 +137,7 @@ $unansweredQuestions = $totalQuestions - $answeredQuestions;
 
 // Get subject breakdown of answered/unanswered questions
 $subjectStats = [];
-foreach ($subjects as $subject) {
+foreach ($allSubjects as $subject) {
     $subjectQuestionsStatement = $db->query(
         "SELECT COUNT(*) as count FROM questions WHERE subject_id = ?",
         [$subject['id']]
@@ -353,7 +362,7 @@ $title = "Exam Review - ECAT System";
             <div class="review-header">
                 <h2 class="review-title">Exam Summary</h2>
                 <div class="review-actions">
-                    <a href="/student/exam.php?subject=<?= $subjects[0]['id'] ?? 0 ?>&question=0" class="button button-return">Return to Exam</a>
+                    <a href="/student/exam.php?subject=<?= $allSubjects[0]['id'] ?? 0 ?>&question=0" class="button button-return">Return to Exam</a>
                     <button id="submitButton" class="button button-submit" <?= $unansweredQuestions > 0 ? 'disabled' : '' ?>>Submit Exam</button>
                 </div>
             </div>
@@ -403,7 +412,7 @@ $title = "Exam Review - ECAT System";
                             </div>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: <?= ($stats['answered'] / $stats['total']) * 100 ?>%;"></div>
+                            <div class="progress-fill" style="width: <?= ($stats['answered'] / max(1, $stats['total'])) * 100 ?>%;"></div>
                         </div>
                         <?php if ($stats['unanswered'] > 0): ?>
                             <div style="margin-top: 10px; text-align: right;">

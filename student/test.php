@@ -62,12 +62,39 @@ if ($attempt['status'] === 'In Progress' && $attempt['start_time'] && $attempt['
 }
 
 // If "Start Exam" button is clicked
+// When "Start Exam" button is clicked
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_exam'])) {
     // Update attempt to mark as started
     $db->query(
         "UPDATE test_attempts SET status = 'In Progress', start_time = NOW() WHERE attempt_id = ?",
         [$attempt['attempt_id']]
     );
+    
+    // Get all subjects
+    $subjectsStatement = $db->query("SELECT id, name FROM subjects ORDER BY name");
+    $subjects = $subjectsStatement->fetchAll();
+    
+    // Randomize subject order
+    shuffle($subjects);
+    
+    // Store randomized subject order in session
+    $_SESSION['exam_subjects_order'] = array_column($subjects, 'id');
+    
+    // For each subject, get and randomize questions
+    $_SESSION['exam_questions_order'] = [];
+    foreach ($subjects as $subject) {
+        $questionsStatement = $db->query(
+            "SELECT id FROM questions WHERE subject_id = ? ORDER BY id",
+            [$subject['id']]
+        );
+        $questions = array_column($questionsStatement->fetchAll(), 'id');
+        
+        // Randomize questions
+        shuffle($questions);
+        
+        // Store randomized question order
+        $_SESSION['exam_questions_order'][$subject['id']] = $questions;
+    }
     
     // Redirect to exam page
     redirect('/student/exam.php');
