@@ -22,8 +22,8 @@ $statement = $db->query(
     LEFT JOIN courses c1 ON s.first_preference_id = c1.course_id
     LEFT JOIN courses c2 ON s.second_preference_id = c2.course_id
     LEFT JOIN barangays b ON s.barangay_id = b.barangay_id
-    LEFT JOIN municipalities m ON s.municipality_id = m.municipality_id
-    LEFT JOIN provinces p ON s.province_id = p.province_id
+    LEFT JOIN municipalities m ON b.municipality_id = m.municipality_id
+    LEFT JOIN provinces p ON m.province_id = p.province_id
     WHERE s.student_id = ?",
     [$studentId]
 );
