@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2025 at 02:28 PM
+-- Generation Time: Apr 03, 2025 at 04:48 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,25 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `ecat`
 --
-
--- --------------------------------------------------------
-
---
--- Table structure for table `admin_users`
---
-
-CREATE TABLE `admin_users` (
-  `user_id` int(11) NOT NULL,
-  `username` varchar(50) NOT NULL,
-  `password_hash` varchar(255) NOT NULL COMMENT 'Store hashed passwords only (e.g., using password_hash())',
-  `full_name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `role_id` int(11) NOT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Allow disabling accounts without deleting',
-  `last_login` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Stores login details for administrative users';
 
 -- --------------------------------------------------------
 
@@ -129,23 +110,11 @@ CREATE TABLE `questions` (
   `choice2` varchar(255) NOT NULL,
   `choice3` varchar(255) NOT NULL,
   `choice4` varchar(255) NOT NULL,
-  `correct_answer` enum('choice1','choice2','choice3','choice4') NOT NULL,
+  `correct_answer` varchar(255) NOT NULL,
   `image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `roles`
---
-
-CREATE TABLE `roles` (
-  `role_id` int(11) NOT NULL,
-  `role_name` varchar(50) NOT NULL COMMENT 'e.g., Administrator, Admission Officer, Question Manager',
-  `description` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Defines user roles for staff access';
 
 -- --------------------------------------------------------
 
@@ -221,8 +190,9 @@ CREATE TABLE `student_answers` (
 
 CREATE TABLE `subjects` (
   `id` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `description` varchar(255) DEFAULT NULL
+  `name` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -244,15 +214,6 @@ CREATE TABLE `test_attempts` (
 --
 -- Indexes for dumped tables
 --
-
---
--- Indexes for table `admin_users`
---
-ALTER TABLE `admin_users`
-  ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_user_role` (`role_id`);
 
 --
 -- Indexes for table `attempt_scores_by_subject`
@@ -301,14 +262,7 @@ ALTER TABLE `provinces`
 --
 ALTER TABLE `questions`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_subject` (`subject_id`);
-
---
--- Indexes for table `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`role_id`),
-  ADD UNIQUE KEY `role_name` (`role_name`);
+  ADD KEY `idx_subject_id` (`subject_id`);
 
 --
 -- Indexes for table `schools`
@@ -362,12 +316,6 @@ ALTER TABLE `test_attempts`
 --
 
 --
--- AUTO_INCREMENT for table `admin_users`
---
-ALTER TABLE `admin_users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `attempt_scores_by_subject`
 --
 ALTER TABLE `attempt_scores_by_subject`
@@ -410,12 +358,6 @@ ALTER TABLE `questions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `roles`
---
-ALTER TABLE `roles`
-  MODIFY `role_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `schools`
 --
 ALTER TABLE `schools`
@@ -456,12 +398,6 @@ ALTER TABLE `test_attempts`
 --
 
 --
--- Constraints for table `admin_users`
---
-ALTER TABLE `admin_users`
-  ADD CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`role_id`) ON UPDATE CASCADE;
-
---
 -- Constraints for table `attempt_scores_by_subject`
 --
 ALTER TABLE `attempt_scores_by_subject`
@@ -490,7 +426,7 @@ ALTER TABLE `municipalities`
 -- Constraints for table `questions`
 --
 ALTER TABLE `questions`
-  ADD CONSTRAINT `fk_questions_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`);
+  ADD CONSTRAINT `fk_questions_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `students`
