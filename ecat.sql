@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2025 at 11:41 PM
+-- Generation Time: Apr 03, 2025 at 11:58 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -33,7 +33,7 @@ CREATE TABLE `admin_users` (
   `password_hash` varchar(255) NOT NULL COMMENT 'Store hashed passwords only (e.g., using password_hash())',
   `full_name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `role_id` int(11) NOT NULL,
+  `role_id` int(11) NOT NULL COMMENT 'Foreign key linking to the roles table',
   `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Allow disabling accounts without deleting',
   `last_login` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -250,6 +250,15 @@ CREATE TABLE `test_attempts` (
 --
 
 --
+-- Indexes for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `uq_admin_username` (`username`),
+  ADD UNIQUE KEY `uq_admin_email` (`email`),
+  ADD KEY `idx_user_role` (`role_id`);
+
+--
 -- Indexes for table `attempt_scores_by_subject`
 --
 ALTER TABLE `attempt_scores_by_subject`
@@ -297,6 +306,13 @@ ALTER TABLE `provinces`
 ALTER TABLE `questions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_subject_id` (`subject_id`);
+
+--
+-- Indexes for table `roles`
+--
+ALTER TABLE `roles`
+  ADD PRIMARY KEY (`role_id`),
+  ADD UNIQUE KEY `uq_role_name` (`role_name`);
 
 --
 -- Indexes for table `schools`
@@ -350,6 +366,12 @@ ALTER TABLE `test_attempts`
 --
 
 --
+-- AUTO_INCREMENT for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `attempt_scores_by_subject`
 --
 ALTER TABLE `attempt_scores_by_subject`
@@ -392,6 +414,12 @@ ALTER TABLE `questions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `roles`
+--
+ALTER TABLE `roles`
+  MODIFY `role_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `schools`
 --
 ALTER TABLE `schools`
@@ -430,6 +458,12 @@ ALTER TABLE `test_attempts`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  ADD CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`role_id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `attempt_scores_by_subject`
