@@ -166,6 +166,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
     $selectedChoice = $_POST['selected_choice'] ?? null;
 
     if ($selectedChoice) {
+        // For Abstract Reasoning, store the selected pattern number directly
+        if ($isAbstractReasoning) {
+            $selectedAnswerText = $selectedChoice; // Pattern number for abstract reasoning
+        } else {
+            // For regular questions, get the actual answer text based on choice selected
+            $questionStatement = $db->query(
+                "SELECT " . $selectedChoice . " AS selected_answer_text FROM questions WHERE id = ?", 
+                [$questionId]
+            );
+            $questionData = $questionStatement->fetch();
+            $selectedAnswerText = $questionData['selected_answer_text'] ?? '';
+        }
+
         // Check if answer already exists
         $checkAnswerStatement = $db->query(
             "SELECT answer_id FROM student_answers 
@@ -175,20 +188,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_answer'])) {
         $existingAnswer = $checkAnswerStatement->fetch();
 
         if ($existingAnswer) {
-            // Update existing answer
+            // Update existing answer with the actual answer text
             $db->query(
                 "UPDATE student_answers 
                  SET selected_choice = ?, answered_at = NOW() 
                  WHERE attempt_id = ? AND question_id = ?",
-                [$selectedChoice, $attempt['attempt_id'], $questionId]
+                [$selectedAnswerText, $attempt['attempt_id'], $questionId]
             );
         } else {
-            // Insert new answer
+            // Insert new answer with the actual answer text
             $db->query(
                 "INSERT INTO student_answers 
                  (attempt_id, question_id, selected_choice, answered_at) 
                  VALUES (?, ?, ?, NOW())",
-                [$attempt['attempt_id'], $questionId, $selectedChoice]
+                [$attempt['attempt_id'], $questionId, $selectedAnswerText]
             );
         }
     }
