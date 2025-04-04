@@ -105,7 +105,7 @@ try {
 $subjectDisplayOrder = [
     'English',
     'Science',
-    'Mathematics', // Ensure exact match with DB subject names
+    'Math', // Ensure exact match with DB subject names
     'Social Science',
     'Filipino',
     'Abstract Reasoning' // Ensure exact match with DB subject names
