@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2025 at 11:58 PM
+-- Generation Time: Apr 11, 2025 at 11:12 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -88,6 +88,38 @@ CREATE TABLE `courses` (
   `course_id` int(11) NOT NULL,
   `course_name` varchar(255) NOT NULL,
   `campus_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `examinee_evaluations`
+--
+
+CREATE TABLE `examinee_evaluations` (
+  `evaluation_id` int(11) NOT NULL,
+  `attempt_id` int(11) NOT NULL COMMENT 'Links to test_attempts table',
+  `q1_computer_easy` varchar(20) NOT NULL,
+  `q2_system_functioned` varchar(20) NOT NULL,
+  `q3_network_issues` varchar(20) NOT NULL,
+  `q4_instructions_clear` varchar(20) NOT NULL,
+  `q5_review_change_easy` varchar(20) NOT NULL,
+  `q6_layout_comfortable` varchar(20) NOT NULL,
+  `q7_system_responsiveness` varchar(30) NOT NULL,
+  `q8_security_satisfaction` varchar(30) NOT NULL,
+  `q9_navigation_problems` varchar(20) NOT NULL,
+  `q10_system_rating` varchar(15) NOT NULL,
+  `q11_room_conducive` varchar(20) NOT NULL,
+  `q12_equipment_comfortable` varchar(20) NOT NULL,
+  `q13_enough_time` varchar(20) NOT NULL,
+  `q14_facilitator_instructions` varchar(20) NOT NULL,
+  `q15_facilitator_helpful` varchar(20) NOT NULL,
+  `q16_environment_quiet` varchar(20) NOT NULL,
+  `q17_issues_addressed` varchar(30) NOT NULL,
+  `q18_prefer_computer_based` varchar(20) NOT NULL,
+  `q19_distractions` varchar(20) NOT NULL,
+  `q20_suggestions` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -204,6 +236,36 @@ CREATE TABLE `students` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `students_temp`
+--
+
+CREATE TABLE `students_temp` (
+  `student_id` int(11) NOT NULL,
+  `passcode` varchar(10) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `first_name` varchar(50) NOT NULL,
+  `middle_name` varchar(50) DEFAULT NULL,
+  `first_preference_id` int(11) DEFAULT NULL,
+  `second_preference_id` int(11) DEFAULT NULL,
+  `strand_id` int(11) DEFAULT NULL,
+  `enrollment_status` enum('Freshman','Transferee','Second Course','Others') DEFAULT NULL,
+  `school_id` int(11) DEFAULT NULL,
+  `lrn` varchar(20) DEFAULT NULL,
+  `gwa` decimal(4,2) DEFAULT NULL,
+  `barangay_id` int(11) DEFAULT NULL,
+  `sex` enum('Male','Female') DEFAULT NULL,
+  `birthday` date DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `contact_number` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `municipality_id` int(11) DEFAULT NULL,
+  `province_id` int(11) DEFAULT NULL,
+  `purok` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `student_answers`
 --
 
@@ -242,7 +304,9 @@ CREATE TABLE `test_attempts` (
   `end_time` timestamp NULL DEFAULT NULL,
   `status` enum('Not Started','In Progress','Completed','Expired','Aborted') NOT NULL DEFAULT 'Not Started',
   `total_score` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `original_session_id` int(11) DEFAULT NULL COMMENT 'The session_id from the source lab DB',
+  `source_lab_id` varchar(50) DEFAULT NULL COMMENT 'Identifier for the source lab (e.g., LAB1, SERVER_A)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -286,6 +350,13 @@ ALTER TABLE `campuses`
 ALTER TABLE `courses`
   ADD PRIMARY KEY (`course_id`),
   ADD KEY `campus_id` (`campus_id`);
+
+--
+-- Indexes for table `examinee_evaluations`
+--
+ALTER TABLE `examinee_evaluations`
+  ADD PRIMARY KEY (`evaluation_id`),
+  ADD UNIQUE KEY `uq_attempt_evaluation` (`attempt_id`);
 
 --
 -- Indexes for table `municipalities`
@@ -359,6 +430,8 @@ ALTER TABLE `subjects`
 --
 ALTER TABLE `test_attempts`
   ADD PRIMARY KEY (`attempt_id`),
+  ADD UNIQUE KEY `uq_source_attempt` (`source_lab_id`,`original_session_id`),
+  ADD UNIQUE KEY `uq_original_attempt` (`original_session_id`,`source_lab_id`),
   ADD KEY `idx_student_attempt` (`student_id`);
 
 --
@@ -394,6 +467,12 @@ ALTER TABLE `campuses`
 --
 ALTER TABLE `courses`
   MODIFY `course_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `examinee_evaluations`
+--
+ALTER TABLE `examinee_evaluations`
+  MODIFY `evaluation_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `municipalities`
@@ -483,6 +562,12 @@ ALTER TABLE `barangays`
 --
 ALTER TABLE `courses`
   ADD CONSTRAINT `courses_ibfk_1` FOREIGN KEY (`campus_id`) REFERENCES `campuses` (`campus_id`);
+
+--
+-- Constraints for table `examinee_evaluations`
+--
+ALTER TABLE `examinee_evaluations`
+  ADD CONSTRAINT `examinee_evaluations_ibfk_1` FOREIGN KEY (`attempt_id`) REFERENCES `test_attempts` (`attempt_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `municipalities`
